@@ -1,10 +1,9 @@
-package com.kuba.lr5.ui.theme
+package com.kuba.lr5.ui
 
 import android.Manifest
 import android.util.Log
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview
-import androidx.camera.core.UseCase
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.*
@@ -20,42 +19,52 @@ import androidx.core.content.ContextCompat
 import com.kuba.lr5.utils.PermissionUtils
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.rotate
 
 @Composable
 fun CameraScreen() {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
+    var permissionGranted by remember { mutableStateOf(PermissionUtils.hasCameraPermission(context)) }
+    var permissionRequested by remember { mutableStateOf(false) }
+
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
-        onResult = { isGranted ->
-            // Тут можна додати логіку, якщо дозвіл отримано/відхилено
-            if (!isGranted) {
-                // Наприклад, показати повідомлення
-            }
+        onResult = { granted ->
+            permissionGranted = granted
+            permissionRequested = true
         }
     )
 
     LaunchedEffect(Unit) {
-        if (!PermissionUtils.hasCameraPermission(context)) {
+        if (!permissionGranted && !permissionRequested) {
             launcher.launch(Manifest.permission.CAMERA)
         }
     }
 
+    if (!permissionGranted) {
+        RequestPermissionScreen(
+            onRequestPermission = {
+                launcher.launch(Manifest.permission.CAMERA)
+            }
+        )
+        return
+    }
+
+
     var brightness by remember { mutableStateOf(0.5f) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Прев'ю камери через AndroidView
         AndroidView(
             factory = { ctx ->
                 PreviewView(ctx).apply {
                     scaleType = PreviewView.ScaleType.FILL_CENTER
-                    // Отримуємо SurfaceProvider і передаємо його в Preview
                     val preview = Preview.Builder().build().also {
                         it.setSurfaceProvider(this.surfaceProvider)
                     }
 
-                    // Ініціалізація камери
                     val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
                     cameraProviderFuture.addListener({
                         try {
@@ -75,13 +84,13 @@ fun CameraScreen() {
             modifier = Modifier.fillMaxSize()
         )
 
-        // Прозорий слайдер яскравості (варіант 11)
         Slider(
             value = brightness,
             onValueChange = { brightness = it },
             modifier = Modifier
-                .padding(end = 16.dp)
+                .rotate(270f)
                 .width(200.dp)
+                .padding(end = 25.dp, top = 110.dp)
                 .align(Alignment.CenterEnd),
             colors = SliderDefaults.colors(
                 thumbColor = MaterialTheme.colorScheme.primary,
@@ -90,18 +99,26 @@ fun CameraScreen() {
             )
         )
 
-        Text(
-            text = "Яскравість: ${String.format("%.1f", brightness)}",
-            color = MaterialTheme.colorScheme.onSurface,
+        Surface(
             modifier = Modifier
-                .padding(top = 16.dp, end = 16.dp)
-                .align(Alignment.TopEnd)
-        )
+                .padding(top = 40.dp, end = 16.dp)
+                .align(Alignment.TopEnd),
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+            shadowElevation = 4.dp
+        ) {
+            Text(
+                text = "Яскравість: ${String.format("%.1f", brightness)}",
+                color = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                style = MaterialTheme.typography.labelMedium
+            )
+        }
     }
 }
 
 @Composable
-fun RequestPermissionScreen() {
+fun RequestPermissionScreen(onRequestPermission: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
@@ -109,6 +126,8 @@ fun RequestPermissionScreen() {
     ) {
         Text("Потрібен дозвіл на камеру", style = MaterialTheme.typography.titleLarge)
         Spacer(modifier = Modifier.height(16.dp))
-        Text("Надайте дозвіл у налаштуваннях додатку")
+        Button(onClick = onRequestPermission) {
+            Text("Запросити дозвіл")
+        }
     }
 }

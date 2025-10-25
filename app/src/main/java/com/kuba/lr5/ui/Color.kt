@@ -1,4 +1,4 @@
-package com.kuba.lr5.ui.theme
+package com.kuba.lr5.ui
 
 import androidx.compose.ui.graphics.Color
 

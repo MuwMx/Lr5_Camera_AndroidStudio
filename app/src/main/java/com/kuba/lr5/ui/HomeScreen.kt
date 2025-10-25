@@ -1,4 +1,4 @@
-package com.kuba.lr5.ui.theme
+package com.kuba.lr5.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -15,7 +15,7 @@ fun HomeScreen(navController: NavController) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Лабораторна робота 5", style = MaterialTheme.typography.headlineMedium)
+        Text("Камера ЛР 5", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(32.dp))
         Button(onClick = { navController.navigate("camera") }) {
             Text("Відкрити камеру")
